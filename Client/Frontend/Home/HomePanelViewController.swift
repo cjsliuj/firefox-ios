@@ -40,9 +40,20 @@ enum HomePanelType: Int {
     }
 }
 
+enum LibraryPanelType: Int {
+    case bookmarks = 0
+    case history = 1
+    case readingList = 2
+    case downloads = 3
+
+    var localhostURL: URL {
+        return URL(string: "#panel=\(self.rawValue)", relativeTo: UIConstants.AboutHomePage as URL)!
+    }
+}
+
 class HomePanelViewController: UIViewController, UITextFieldDelegate, HomePanelDelegate {
     var profile: Profile!
-    var panels: [HomePanelDescriptor]!
+    var panels: [HomePanelDescriptor] = HomePanels().enabledPanels
     var url: URL?
     weak var delegate: HomePanelDelegate?
 
@@ -87,17 +98,18 @@ class HomePanelViewController: UIViewController, UITextFieldDelegate, HomePanelD
             make.bottom.equalTo(buttonContainerView.snp.top)
         }
 
-        self.panels = HomePanels().enabledPanels
         updateButtons()
         applyTheme()
-        selectedPanel = HomePanelType.topSites
+        if selectedPanel == nil {
+            selectedPanel = .bookmarks
+        }
     }
 
     @objc func done() {
         self.dismiss(animated: true, completion: nil)
     }
 
-    var selectedPanel: HomePanelType? = nil {
+    var selectedPanel: LibraryPanelType? = nil {
         didSet {
             if oldValue == selectedPanel {
                 // Prevent flicker, allocations, and disk access: avoid duplicate view controllers.
@@ -172,7 +184,7 @@ class HomePanelViewController: UIViewController, UITextFieldDelegate, HomePanelD
 
     @objc func tappedButton(_ sender: UIButton!) {
         for (index, button) in buttons.enumerated() where button == sender {
-            selectedPanel = HomePanelType(rawValue: index)
+            selectedPanel = LibraryPanelType(rawValue: index)
             if selectedPanel == .bookmarks {
                 UnifiedTelemetry.recordEvent(category: .action, method: .view, object: .bookmarksPanel, value: .homePanelTabButton)
             } else if selectedPanel == .downloads {
